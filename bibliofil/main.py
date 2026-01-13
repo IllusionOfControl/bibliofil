@@ -20,9 +20,6 @@ def main():
     p_clean = subparsers.add_parser("clean", help="Удаление")
     p_clean.add_argument("--dry-run", action="store_true", help="Тестовый запуск")
 
-    idx = subparsers.add_parser("index")
-    idx.add_argument("path")
-
     subparsers.add_parser("stats")
 
     args = parser.parse_args()
