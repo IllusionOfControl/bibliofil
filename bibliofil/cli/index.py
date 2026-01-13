@@ -45,7 +45,7 @@ class ArchiveProcessor:
 
 
 @ArchiveProcessor.register('.zip')
-def _handle_zip(full_path: str | pathlib.Path) -> Generator[BiblioFile]:
+def _handle_zip(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, None]:
     with zipfile.ZipFile(full_path, 'r') as z:
         for info in z.infolist():
             if info.is_dir(): continue
@@ -60,7 +60,7 @@ def _handle_zip(full_path: str | pathlib.Path) -> Generator[BiblioFile]:
 
 
 @ArchiveProcessor.register('.tar', '.gz', '.bz2', '.xz')
-def _handle_tar(full_path: str | pathlib.Path) -> Generator[BiblioFile]:
+def _handle_tar(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, None]:
     with tarfile.open(full_path, "r:*") as t:
         for member in t.getmembers():
             if not member.isfile(): continue
@@ -76,7 +76,7 @@ def _handle_tar(full_path: str | pathlib.Path) -> Generator[BiblioFile]:
 
 
 @ArchiveProcessor.register('.7z')
-def _handle_7z(full_path: str | pathlib.Path) -> Generator[BiblioFile]:
+def _handle_7z(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, None]:
     with tempfile.TemporaryDirectory() as tmpdir:
         with py7zr.SevenZipFile(full_path, mode='r') as archive:
             archive.extractall(path=tmpdir)
