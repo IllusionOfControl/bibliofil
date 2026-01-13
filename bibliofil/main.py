@@ -26,7 +26,7 @@ def main():
 
     database = Database(args.db)
 
-    if args.cmd == "index":
+    if args.command == "index":
         run_indexing(database, args.path)
-    elif args.cmd == "stats":
+    elif args.command == "stats":
         run_stats(args.db)
