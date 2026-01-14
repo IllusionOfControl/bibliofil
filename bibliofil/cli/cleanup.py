@@ -43,10 +43,11 @@ def run_cleanup(
         else:
             try:
                 if os.path.exists(file_path):
-                    # os.remove(file_path)
+                    os.remove(file_path)
                     print(f"{'[DELETED]':<10} | {biblio_file.name}")
                     deleted_count += 1
                     freed_space += biblio_file.size
+                    database.delete_file(biblio_file.id)
                 else:
                     print(f"{'[SKIP]':<10} | {biblio_file.name} (File not found)")
             except Exception as e:
