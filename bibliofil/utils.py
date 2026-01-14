@@ -1,5 +1,6 @@
 import hashlib
 import pathlib
+import re
 from typing import IO
 
 
@@ -16,3 +17,23 @@ def calculate_md5(file_path_or_obj: str | pathlib.Path | IO) -> str | None:
         return hash_md5.hexdigest()
     except Exception:
         return None
+
+
+def parse_to_bytes(size_str: str) -> int:
+    units = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
+
+    match = re.match(r"^([-+]?[0-9.]+)\s*([a-zA-Z]?)$", size_str.strip())
+
+    if not match:
+        raise ValueError(f"Wrong format: {size_str}")
+
+    number, unit = match.groups()
+    number = float(number)
+    unit = unit.upper()
+
+    if unit in units:
+        return int(number * units[unit])
+    elif unit == "" or unit == "B":
+        return int(number)
+    else:
+        raise ValueError(f"Unknown measure unit: {unit}")

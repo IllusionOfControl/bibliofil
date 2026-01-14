@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 
 class ArchiveProcessor:
-    _registry: dict[str, Callable[[pathlib.Path], Generator[BiblioFile, None, None]]] = {}
+    _registry: dict[
+        str, Callable[[pathlib.Path], Generator[BiblioFile, None, None]]
+    ] = {}
 
     @classmethod
     def register(cls, *extensions: str):
@@ -44,26 +46,28 @@ class ArchiveProcessor:
         return list(cls._registry.keys())
 
 
-@ArchiveProcessor.register('.zip')
+@ArchiveProcessor.register(".zip")
 def _handle_zip(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, None]:
-    with zipfile.ZipFile(full_path, 'r') as z:
+    with zipfile.ZipFile(full_path, "r") as z:
         for info in z.infolist():
-            if info.is_dir(): continue
+            if info.is_dir():
+                continue
             with z.open(info) as f:
                 yield BiblioFile(
                     name=pathlib.Path(info.filename).name,
                     extension=pathlib.Path(info.filename).suffix.lower(),
                     path=f"{full_path}://{info.filename}",
                     size=info.file_size,
-                    md5=calculate_md5(f)
+                    md5=calculate_md5(f),
                 )
 
 
-@ArchiveProcessor.register('.tar', '.gz', '.bz2', '.xz')
+@ArchiveProcessor.register(".tar", ".gz", ".bz2", ".xz")
 def _handle_tar(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, None]:
     with tarfile.open(full_path, "r:*") as t:
         for member in t.getmembers():
-            if not member.isfile(): continue
+            if not member.isfile():
+                continue
             f = t.extractfile(member)
             if f:
                 yield BiblioFile(
@@ -71,34 +75,36 @@ def _handle_tar(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, No
                     extension=pathlib.Path(member.name).suffix.lower(),
                     path=f"{full_path}://{member.name}",
                     size=member.size,
-                    md5=calculate_md5(f)
+                    md5=calculate_md5(f),
                 )
 
 
-@ArchiveProcessor.register('.7z')
+@ArchiveProcessor.register(".7z")
 def _handle_7z(full_path: str | pathlib.Path) -> Generator[BiblioFile, None, None]:
     with tempfile.TemporaryDirectory() as tmpdir:
-        with py7zr.SevenZipFile(full_path, mode='r') as archive:
+        with py7zr.SevenZipFile(full_path, mode="r") as archive:
             archive.extractall(path=tmpdir)
-        for p in pathlib.Path(tmpdir).rglob('*'):
+        for p in pathlib.Path(tmpdir).rglob("*"):
             if p.is_file():
                 yield BiblioFile(
                     name=p.name,
                     extension=p.suffix.lower(),
                     path=f"{full_path}://{p.relative_to(tmpdir)}",
                     size=p.stat().st_size,
-                    md5=calculate_md5(p)
+                    md5=calculate_md5(p),
                 )
 
 
-def run_indexing(database: Database, root_path: str) -> None:
+def run_index(database: Database, root_path: str) -> None:
     root = pathlib.Path(root_path)
 
-    for file_path in root.rglob('*'):
-        if not file_path.is_file(): continue
+    for file_path in root.rglob("*"):
+        if not file_path.is_file():
+            continue
 
         try:
             is_arch = ArchiveProcessor.is_archive(file_path)
+            print("Processing {}".format(file_path))
 
             main_entry = BiblioFile(
                 name=file_path.name,
@@ -106,14 +112,16 @@ def run_indexing(database: Database, root_path: str) -> None:
                 path=str(file_path.absolute()),
                 size=file_path.stat().st_size,
                 md5=calculate_md5(file_path),
-                created_at=datetime.fromtimestamp(file_path.stat().st_mtime).isoformat(),
-                is_archive=is_arch
+                created_at=datetime.fromtimestamp(
+                    file_path.stat().st_mtime
+                ).isoformat(),
+                is_archive=is_arch,
             )
 
             archive_id = database.insert_file(main_entry)
 
             if is_arch:
                 for sub_entry in ArchiveProcessor.get_entries(file_path):
-                    database.insert_file(sub_entry.update(parent_id=archive_id))
+                    database.insert_file(sub_entry.update(archive_id=archive_id))
         except Exception as e:
             logger.error(e)
