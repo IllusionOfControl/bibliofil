@@ -73,6 +73,7 @@ class Database:
             WITH dh AS (SELECT md5 FROM files {where_clause} GROUP BY md5 HAVING COUNT(*) > 1)
             SELECT f.id, f.name, f.extension, f.path, f.size, f.md5, f.archive_id 
             FROM files f JOIN dh ON f.md5 = dh.md5 
+            AND archive_id IS NULL
             ORDER BY f.size DESC, f.md5, f.created_at
         """
         cursor = self._conn.cursor()
