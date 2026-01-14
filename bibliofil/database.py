@@ -71,8 +71,14 @@ class Database:
 
         stmt = f"""
             WITH dh AS (SELECT md5 FROM files {where_clause} GROUP BY md5 HAVING COUNT(*) > 1)
-            SELECT f.id, f.name, f.extension, f.path, f.size, f.md5, f.archive_id FROM files f JOIN dh ON f.md5 = dh.md5 ORDER BY f.size DESC, f.md5
+            SELECT f.id, f.name, f.extension, f.path, f.size, f.md5, f.archive_id FROM files f JOIN dh ON f.md5 = dh.md5 ORDER BY f.size DESC, f.md5, f.created_at
         """
         cursor = self._conn.cursor()
         cursor.execute(stmt, params)
         return [BiblioFile(*row) for row in cursor.fetchall()]
+
+    def delete_file(self, entity_id: int):
+        stmt = "DELETE FROM files WHERE id = ? OR archive_id = ?"
+        cursor = self._conn.cursor()
+        cursor.execute(stmt, [entity_id, entity_id])
+        self._conn.commit()
